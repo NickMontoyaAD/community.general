@@ -800,6 +800,11 @@ def finish(module, tree, xpath, namespaces, changed=False, msg='', hitcount=0, m
 
     module.exit_json(**result)
 
+# Extended helper funcs
+def set_vulnerability_info(xpath, module, doc, namespaces, attribute, value):
+    ensure_xpath_exists(module, doc, xpath, namespaces)
+    set_target(module, doc, xpath, namespaces, attribute, value)
+
 
 def main():
     module = AnsibleModule(
@@ -822,6 +827,18 @@ def main():
             strip_cdata_tags=dict(type='bool', default=False),
             insertbefore=dict(type='bool', default=False),
             insertafter=dict(type='bool', default=False),
+            # Custom items here 
+            xpath_base=dict(type='str'), # We can append STATUS, FINDING_DETAILS, COMMENTS to this base as needed
+            vulnerability_status=dict(type='str', choices=['status1', 'status2']), # TO-DO: Find out if statuses are predefined, add here
+            finding_details=dict(type='str'),
+            comments=dict(type='str'),
+            # TO-DO: Add in vulnerability number as well. Need to find where this is pulled from/if it's contained within the checklist being iterated
+            # TO-DO: Correctly configure required section below
+            #       1.) Vulnerability Number - Required
+            #       2.) Vulnerability Status - Required
+            #       3.) Findings - Optional
+            #       4.) Comments - Optional
+            #       xpath_base is required to perform
         ),
         supports_check_mode=True,
         required_by=dict(
@@ -866,6 +883,11 @@ def main():
     strip_cdata_tags = module.params['strip_cdata_tags']
     insertbefore = module.params['insertbefore']
     insertafter = module.params['insertafter']
+    # New params
+    xpath_base = module.params['xpath_base']
+    vulnerability_status = module.params['vulnerability_status']
+    finding_details = module.params['findings']
+    comments = module.params['comments']
 
     # Check if we have lxml 2.3.0 or newer installed
     if not HAS_LXML:
@@ -941,6 +963,19 @@ def main():
     # If an xpath was provided, we need to do something with the data
     if xpath is not None:
         ensure_xpath_exists(module, doc, xpath, namespaces)
+
+    # Extended params stuff
+
+    if vulnerability_status is not None:
+        set_vulnerability_info(xpath_base + 'STATUS', module, doc, namespaces, attribute, vulnerability_status)
+
+    if finding_details is not None:
+        set_vulnerability_info(xpath_base + 'FINDING_DETAILS', module, doc, namespaces, attribute, finding_details)
+    
+    if comments is not None:
+        set_vulnerability_info(xpath_base + 'COMMENTS', module, doc, namespaces, attribute, comments)
+        
+
 
     # Otherwise only reformat the xml data?
     if pretty_print:
