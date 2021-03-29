@@ -801,7 +801,23 @@ def finish(module, tree, xpath, namespaces, changed=False, msg='', hitcount=0, m
     module.exit_json(**result)
 
 # Extended helper funcs
-def set_vulnerability_info(xpath, module, doc, namespaces, attribute, value):
+def set_vulnerability_info(xpath, module, namespaces, attribute, value):
+    
+    # Parse and evaluate xpath expression
+    try:
+        etree.XPath(xpath)
+    except etree.XPathSyntaxError as e:
+        module.fail_json(msg="Syntax error in xpath expression: %s (%s)" % (xpath, e))
+    except etree.XPathEvalError as e:
+        module.fail_json(msg="Evaluation error in xpath expression: %s (%s)" % (xpath, e))
+
+    # Try to parse in the target XML file
+    try:
+        parser = etree.XMLParser(remove_blank_text=pretty_print, strip_cdata=strip_cdata_tags)
+        doc = etree.parse(infile, parser)
+    except etree.XMLSyntaxError as e:
+        module.fail_json(msg="Error while parsing document: %s (%s)" % (xml_file or 'xml_string', e))
+
     ensure_xpath_exists(module, doc, xpath, namespaces)
     set_target(module, doc, xpath, namespaces, attribute, value)
 
@@ -829,7 +845,7 @@ def main():
             insertafter=dict(type='bool', default=False),
             # Custom items here 
             xpath_base=dict(type='str'), # We can append STATUS, FINDING_DETAILS, COMMENTS to this base as needed
-            vulnerability_status=dict(type='str', choices=['status1', 'status2']), # TO-DO: Find out if statuses are predefined, add here
+            vulnerability_status=dict(type='str', choices=['open', 'not a finding', 'not applicable', 'not reviewed'], default='not reviewed'), 
             finding_details=dict(type='str'),
             comments=dict(type='str'),
             # TO-DO: Add in vulnerability number as well. Need to find where this is pulled from/if it's contained within the checklist being iterated
@@ -967,13 +983,13 @@ def main():
     # Extended params stuff
 
     if vulnerability_status is not None:
-        set_vulnerability_info(xpath_base + 'STATUS', module, doc, namespaces, attribute, vulnerability_status)
+        set_vulnerability_info(xpath_base + 'STATUS', module, namespaces, attribute, vulnerability_status)
 
     if finding_details is not None:
-        set_vulnerability_info(xpath_base + 'FINDING_DETAILS', module, doc, namespaces, attribute, finding_details)
+        set_vulnerability_info(xpath_base + 'FINDING_DETAILS', module, namespaces, attribute, finding_details)
     
     if comments is not None:
-        set_vulnerability_info(xpath_base + 'COMMENTS', module, doc, namespaces, attribute, comments)
+        set_vulnerability_info(xpath_base + 'COMMENTS', module, namespaces, attribute, comments)
         
 
 
