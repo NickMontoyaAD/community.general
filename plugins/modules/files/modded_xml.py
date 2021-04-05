@@ -801,7 +801,7 @@ def finish(module, tree, xpath, namespaces, changed=False, msg='', hitcount=0, m
     module.exit_json(**result)
 
 # Extended helper funcs
-def set_vulnerability_info(xpath, module, namespaces, attribute, value):
+def set_vulnerability_info(xpath, module, namespaces, attribute, value, pretty_print, strip_cdata_tags, infile, xml_file):
     
     # Parse and evaluate xpath expression
     try:
@@ -845,7 +845,7 @@ def main():
             insertafter=dict(type='bool', default=False),
             # Custom items here 
             xpath_base=dict(type='str'), # We can append STATUS, FINDING_DETAILS, COMMENTS to this base as needed
-            vulnerability_status=dict(type='str', choices=['open', 'not a finding', 'not applicable', 'not reviewed'], default='not reviewed'), 
+            vulnerability_status=dict(type='str', choices=['Open', 'NotAFinding', 'NotApplicable', 'NotReviewed'], default='NotReviewed'), 
             finding_details=dict(type='str'),
             comments=dict(type='str'),
             # TO-DO: Add in vulnerability number as well. Need to find where this is pulled from/if it's contained within the checklist being iterated
@@ -902,7 +902,7 @@ def main():
     # New params
     xpath_base = module.params['xpath_base']
     vulnerability_status = module.params['vulnerability_status']
-    finding_details = module.params['findings']
+    finding_details = module.params['finding_details']
     comments = module.params['comments']
 
     # Check if we have lxml 2.3.0 or newer installed
@@ -983,13 +983,13 @@ def main():
     # Extended params stuff
 
     if vulnerability_status is not None:
-        set_vulnerability_info(xpath_base + 'STATUS', module, namespaces, attribute, vulnerability_status)
+        set_vulnerability_info(xpath_base + 'STATUS', module, namespaces, attribute, vulnerability_status, pretty_print, strip_cdata_tags, infile, xml_file)
 
     if finding_details is not None:
-        set_vulnerability_info(xpath_base + 'FINDING_DETAILS', module, namespaces, attribute, finding_details)
+        set_vulnerability_info(xpath_base + 'FINDING_DETAILS', module, namespaces, attribute, finding_details, pretty_print, strip_cdata_tags, infile, xml_file)
     
     if comments is not None:
-        set_vulnerability_info(xpath_base + 'COMMENTS', module, namespaces, attribute, comments)
+        set_vulnerability_info(xpath_base + 'COMMENTS', module, namespaces, attribute, comments, pretty_print, strip_cdata_tags, infile, xml_file)
         
 
 
