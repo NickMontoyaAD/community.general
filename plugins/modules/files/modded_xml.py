@@ -802,7 +802,14 @@ def finish(module, tree, xpath, namespaces, changed=False, msg='', hitcount=0, m
 
 # Extended helper funcs
 def set_vulnerability_info(xpath, module, namespaces, attribute, value, pretty_print, strip_cdata_tags, infile, xml_file):
-    
+    # Check if the file exists
+    if xml_string:
+        infile = BytesIO(to_bytes(xml_string, errors='surrogate_or_strict'))
+    elif os.path.isfile(xml_file):
+        infile = open(xml_file, 'rb')
+    else:
+        module.fail_json(msg="The target XML source '%s' does not exist." % xml_file)
+
     # Parse and evaluate xpath expression
     try:
         etree.XPath(xpath)
